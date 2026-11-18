@@ -1,0 +1,30 @@
+# Cisco Packet Tracer helper
+
+## What the first version does
+
+Open a compact Windows tray app and choose **Continue with ChatGPT** on first use. Authorize the helper to use your existing ChatGPT plan. Then enter a prompt and press **Build**. The helper creates a new lab in Packet Tracer and returns an editable `.pkt` with a short build result. Start with one Ethernet switch and a few PCs on a single IPv4 subnet. The tray app opens on demand, shows progress inside the prompt window, and leaves the result available from the tray.
+
+> Connect two PCs through a switch on 192.168.10.0/24. Give them addresses .10 and .11 and check that they can ping each other.
+
+## How it works
+
+1. **Interpret the prompt using your ChatGPT plan.** Use OpenAI's Sign in with ChatGPT flow for locally running personal apps. Eligible Plus and Pro accounts can authorize plan usage for supported Responses API requests. Store the resulting credentials in Windows Credential Manager and use the selected account's allowance. Stream the response to completion and request a versioned topology spec with devices, links, IPv4 settings, and connectivity checks. Verify Structured Outputs on the selected model during the sign-in test. Show an actionable message if authorization expires or the plan limit is reached. [Sign in with ChatGPT quickstart](https://developers.openai.com/siwc/quickstart) · [Local desktop example](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt) · [Models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)
+2. **Validate and resolve the topology locally.** Check available device models, port capacity and compatibility, link endpoints, and unique, usable IP addresses. Use stable defaults for names, placement, and unassigned ports. Show any unsupported requirement or conflict before applying the plan. The model supplies topology data. The local builder owns each simulator operation.
+3. **Build through Packet Tracer.** Use an on-demand, installation-level Script Module and Packet Tracer’s Extensions API. Test a per-user local job directory as the handoff, with one active build, a unique job ID, and an atomic request write. Start the job in a fresh lab and preserve any unsaved work. If the installed build supports script file import but the automatic handoff falls short, use **Build from plan** to prove the builder and evaluate a local ExApp for the one-prompt workflow. [Script Modules](https://tutorials.ptnetacad.net/help/default/scriptModules.htm) · [Local file API](https://tutorials.ptnetacad.net/help/default/IpcAPI/class_system_file_manager.html) · [External apps and IPC](https://tutorials.ptnetacad.net/help/default/ipc.htm)
+4. **Verify and save.** Read back device models, link endpoints, and IP settings. Wait for simulated links to become ready and run a simulated ping. Save to a new `.pkt` and wait for Packet Tracer’s save result. Report the specific failed step if anything breaks. Use Packet Tracer’s native export so the lab opens on its own. [Logical workspace API](https://tutorials.ptnetacad.net/help/default/IpcAPI/class_logical_workspace.html) · [Save API](https://tutorials.ptnetacad.net/help/default/IpcAPI/class_app_window.html)
+
+If the standalone sign-in preview is unavailable for your account, use your already signed-in Codex CLI as the prompt interface. A local MCP tool can send a topology spec to the same validator and builder, then return the `.pkt` path and verification result. [Codex authentication](https://learn.chatgpt.com/docs/auth) · [Local MCP configuration](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)
+
+## Build order
+
+1. **Prove the integration on Packet Tracer 9.0.1.0858 for Windows.** The installed app exposes **Extensions → Scripting** and **Extensions → IPC**. The scripting editor confirms that a new PT Script Module must be exported as a `.pts` and added in Packet Tracer before it can run. Use a disposable module and a fresh lab to create two `PC-PT` devices and one `2960-24TT` switch, cable them, assign static IPv4, and run a ping. Save, reopen, check the topology, and ping again. The bundled API reference is labeled 8.1.0, so confirm the actual model and port identifiers, extension privileges, and local file handoff on this installation.
+2. **Build from a local fixture.** Run the same adapter from a validated JSON plan. Exercise duplicate IPs, exhausted or reused ports, a busy session, and save failure. Bind each result to its job so a retry can’t report a stale file as a new build.
+3. **Verify subscription-backed inference.** Complete **Continue with ChatGPT** with the existing account and check the plan-usage grant. Send the example prompt to an available model and validate its complete response against the topology schema. Exercise expired authorization, plan limits, and interrupted responses before handing jobs to Packet Tracer.
+4. **Connect the tray app.** Run the example prompt end to end. It passes when one Build action yields a fresh `.pkt` with exactly two PCs, one switch, two links, and the requested addresses. Open the file in a clean Packet Tracer session and verify that the PCs can still ping. Run a second prompt to confirm it produces a separate lab.
+5. **Add VLANs, DHCP, and routing in stages.** Add switches and models as they are verified. For each feature, test the generated configuration and the expected traffic behavior in the simulator.
+
+## Implementation status
+
+The installed Packet Tracer 9.0.1.0858 module built and saved the example lab. The saved `.pkt` reopened with both PCs and the switch, and a fresh simulated ICMP packet from PC1 to PC2 succeeded. The tray app then reused the existing Codex ChatGPT sign-in for a separate prompt and saved a second lab with a passing connectivity check.
+
+The tray uses the signed-in Codex CLI to generate topology data when the tray's direct ChatGPT connection is unset. The direct **Continue with ChatGPT** flow is implemented and awaits browser authorization for its first live test. See `README.md` for the launch and setup steps.
