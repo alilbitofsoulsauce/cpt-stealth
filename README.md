@@ -28,3 +28,7 @@ The Codex route renders PDFs locally and reads up to 20 PDF pages and images com
 ## Run from source
 
 Open `Start.cmd` with Node.js 22 or newer available on `PATH` or from the Codex Windows runtime. After editing the tray source, exit the app from its tray menu and run `Start.cmd --rebuild`. Run `node --test` for local tests or `pwsh -File scripts/package.ps1` to build the Windows ZIP.
+
+## Update the Packet Tracer module
+
+After extracting a new release, select the old **Packet Tracer Helper** entry in **Configure PT Script Modules** and choose **Remove**. Add the `.pts` from the new helper's setup window. Your saved `.pkt` labs remain in the labs folder.

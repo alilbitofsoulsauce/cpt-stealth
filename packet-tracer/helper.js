@@ -336,7 +336,15 @@ function verifyTopology(job, now) {
         job.pingQueue = job.checks.slice();
         job.pingAttempts = Object.create(null);
         job.nextPingAt = now + 1000;
-        job.pingDeadline = now + 65000;
+        var countsBySource = Object.create(null);
+        var longestQueue = 0;
+        job.checks.forEach(function (check) {
+            var count = (countsBySource[check.from] || 0) + 1;
+            countsBySource[check.from] = count;
+            longestQueue = Math.max(longestQueue, count);
+        });
+        // Allow links to converge and reserve time for checks that share one PC console.
+        job.pingDeadline = now + Math.max(65000, 35000 + 3000 * longestQueue);
     } else if (now >= job.linkDeadline) {
         var names = disconnected.map(function (pc) { return pc.name; });
         throw new Error("Packet Tracer reported " + deviceCount + " devices and " + linkCount + " links. " +
@@ -401,7 +409,7 @@ function pollPings(job) {
                 previousOutput: String(terminal.getOutput())
             };
             // The address is a validated IPv4 address from a PC in this lab.
-            terminal.enterCommand("ping " + destination);
+            terminal.enterCommand("ping -n 1 " + destination);
         }
     }
 }

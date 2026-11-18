@@ -469,7 +469,11 @@ internal sealed class TrayForm : Form
         }
         var checks = Value(response, "checks") as ICollection;
         int checkCount = checks == null ? 0 : checks.Count;
-        if (!Flag(response, "verified")) result.Text = "Saved the lab. Review the connectivity checks in Packet Tracer.";
+        if (!Flag(response, "verified"))
+        {
+            int passed = checks == null ? 0 : checks.Cast<object>().Count(check => Flag(check as Dictionary<string, object>, "ok"));
+            result.Text = "Saved the lab. " + passed + " of " + checkCount + " connectivity checks passed.";
+        }
         else if (checkCount == 1) result.Text = "Saved the lab. 1 connectivity check passed.";
         else if (checkCount > 1) result.Text = "Saved the lab. " + checkCount + " connectivity checks passed.";
         else result.Text = "Saved the lab.";
