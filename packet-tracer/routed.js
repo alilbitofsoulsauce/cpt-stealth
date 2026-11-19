@@ -90,7 +90,7 @@ function validateRoutedPlan(topology) {
 
         site.vlans.forEach(function (vlan) {
             if (!vlan || typeof vlan.id !== "number" || vlan.id % 1 || vlan.id < 1 ||
-                    vlan.id > 4094 || (vlan.id >= 1002 && vlan.id <= 1005) || vlanIds[vlan.id] ||
+                    vlan.id > 1001 || vlanIds[vlan.id] ||
                     typeof vlan.name !== "string" || !/^[A-Za-z0-9_-]{1,32}$/.test(vlan.name) ||
                     !Array.isArray(vlan.pcs)) {
                 throw new Error("Each VLAN needs a unique usable VLAN ID, name, and PCs.");
@@ -186,9 +186,6 @@ function routedRouterCommands(site, wanLinks) {
 
 function routedSwitchCommands(site) {
     var commands = ["configure terminal", "hostname " + site.switchName];
-    if (site.vlans.some(function (vlan) { return vlan.id > 1005; })) {
-        commands.push("vtp mode transparent");
-    }
     site.vlans.forEach(function (vlan) {
         commands.push("vlan " + vlan.id, "name " + vlan.name, "exit");
         vlan.pcs.forEach(function (pc) {
@@ -196,12 +193,7 @@ function routedSwitchCommands(site) {
                 "switchport access vlan " + vlan.id, "spanning-tree portfast", "exit");
         });
     });
-    commands.push("interface FastEthernet0/24", "switchport mode trunk", "switchport trunk allowed vlan none");
-    // Packet Tracer 9.0.1 can accept a comma list without applying its extended VLANs.
-    site.vlans.forEach(function (vlan) {
-        commands.push("switchport trunk allowed vlan add " + vlan.id);
-    });
-    commands.push("end", "write memory");
+    commands.push("interface FastEthernet0/24", "switchport mode trunk", "end", "write memory");
     return commands;
 }
 

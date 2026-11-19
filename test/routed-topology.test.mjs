@@ -96,8 +96,8 @@ test('accepts 23 PCs and eight VLANs per site and reserves switch port 24', () =
   assert.throws(() => normalizeRoutedTopology(lab({ sites: [hq], wanLinks: [], pings: [] })), /up to 23 PCs/);
 });
 
-test('rejects duplicate VLAN IDs and invalid or reserved VLAN IDs', () => {
-  for (const id of [0, 1002, 1005, 4095, 1.5, '10']) {
+test('rejects duplicate VLAN IDs and IDs outside the saved lab range', () => {
+  for (const id of [0, 1002, 1005, 1999, 4095, 1.5, '10']) {
     const input = lab();
     input.sites[0].vlans[0].id = id;
     assert.throws(() => normalizeRoutedTopology(input), /VLAN ID/);

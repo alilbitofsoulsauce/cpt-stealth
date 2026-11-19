@@ -43,23 +43,16 @@ test('configures IOS through the native parser with explicit initial and save mo
   assert.equal(executed.length, commands.length);
 });
 
-test('enables VTP transparent mode and adds each extended VLAN to the trunk individually', () => {
+test('configures router-facing trunks using the saved Packet Tracer default VLAN range', () => {
   const context = loadModule();
   const makeSite = ids => ({
     switchName: 'HQ-SW',
     vlans: ids.map(id => ({ id, name: `VLAN_${id}`, pcs: [] })),
   });
   const normal = Array.from(context.routedSwitchCommands(makeSite([1, 20, 1001])));
-  const extended = Array.from(context.routedSwitchCommands(makeSite([20, 1999, 3000])));
-
-  assert.equal(normal.includes('vtp mode transparent'), false);
-  assert.equal(extended.filter(command => command === 'vtp mode transparent').length, 1);
-  assert.ok(extended.indexOf('vtp mode transparent') < extended.indexOf('vlan 20'));
-  assert.deepEqual(extended.filter(command => command.startsWith('switchport trunk allowed vlan ')), [
-    'switchport trunk allowed vlan none',
-    'switchport trunk allowed vlan add 20',
-    'switchport trunk allowed vlan add 1999',
-    'switchport trunk allowed vlan add 3000',
+  assert.ok(normal.includes('vlan 1001'));
+  assert.deepEqual(normal.slice(-4), [
+    'interface FastEthernet0/24', 'switchport mode trunk', 'end', 'write memory',
   ]);
 });
 

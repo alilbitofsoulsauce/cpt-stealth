@@ -125,7 +125,7 @@ async function handleMcp(line) {
       const supported = ['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25'];
       const version = message.params?.protocolVersion;
       reply({ protocolVersion: supported.includes(version) ? version : supported.at(-1),
-        capabilities: { tools: {} }, serverInfo: { name: 'packet-tracer-helper', version: '0.2.0' } });
+        capabilities: { tools: {} }, serverInfo: { name: 'packet-tracer-helper', version: '0.2.1' } });
       break;
     }
     case 'ping':

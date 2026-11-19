@@ -21,7 +21,7 @@ Choose **VLAN/WAN example** in the helper for a two-site lab you can build right
 > Build an HQ and a branch with a 2911 router and a 2960 switch at each site. Put SALES1 in HQ VLAN 10 on 10.42.10.0/24 and ENG1 in HQ VLAN 20 on 10.42.20.0/24. Put OPS1 in branch VLAN 30 on 10.42.30.0/24 and SUPPORT1 in branch VLAN 40 on 10.42.40.0/24. Use 802.1Q trunks, connect the routers with an Ethernet WAN on 10.255.0.0/30, and configure static routes to the remote VLANs. Verify SALES1 can ping ENG1 and OPS1, and OPS1 can ping SALES1 and SUPPORT1.
 
 - A basic lab supports one 2960 switch and up to 24 PCs on one static IPv4 subnet.
-- A routed lab supports one to four sites with up to eight VLANs and 23 PCs per site. Enter your subnets, VLAN IDs, gateways, and host addresses, or ask the helper to choose them. A site can have up to two point-to-point WAN links, each using its own private IPv4 `/30` subnet. The helper configures inter-VLAN routing and static routes to the remote VLANs.
+- A routed lab supports one to four sites with up to eight VLANs and 23 PCs per site. Enter your subnets, VLAN IDs from 1 to 1001, gateways, and host addresses, or ask the helper to choose them. A site can have up to two point-to-point WAN links, each using its own private IPv4 `/30` subnet. The helper configures inter-VLAN routing and static routes to the remote VLANs.
 - Each build supports up to 24 simulated ping checks between named PCs. The result shows how many passed, and the saved `.pkt` opens in Packet Tracer for editing.
 
 Use static IPv4 addressing and routing for these labs. DHCP, OSPF, BGP, NAT, ACLs, IPv6, and redundant WAN links are outside the current feature set.
