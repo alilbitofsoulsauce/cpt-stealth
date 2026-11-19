@@ -1,4 +1,4 @@
-param([ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Version = 'v0.1.1')
+param([ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Version = 'v0.2.0')
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent

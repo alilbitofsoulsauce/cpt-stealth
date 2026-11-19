@@ -166,6 +166,7 @@ internal sealed class TrayForm : Form
         removeAttachmentButton = AddButton("Remove", 430, 258, 118, 25);
         removeAttachmentButton.Enabled = false;
         Button exampleButton = AddButton("Use example", 22, 293, 106, 35);
+        Button routedExampleButton = AddButton("VLAN/WAN example", 136, 293, 145, 35);
         buildButton = AddButton("Build", 411, 293, 137, 35);
         buildButton.FlatStyle = FlatStyle.Flat;
         buildButton.FlatAppearance.BorderSize = 0;
@@ -210,6 +211,15 @@ internal sealed class TrayForm : Form
         exampleButton.Click += (sender, e) =>
         {
             prompt.Text = "Connect two PCs through a switch on 192.168.10.0/24. Give them addresses .10 and .11 and check they can ping each other.";
+            prompt.Focus();
+        };
+        routedExampleButton.Click += (sender, e) =>
+        {
+            prompt.Text = "Build an HQ and a branch with a 2911 router and a 2960 switch at each site. " +
+                "Put SALES1 in HQ VLAN 10 on 10.42.10.0/24 and ENG1 in HQ VLAN 20 on 10.42.20.0/24. " +
+                "Put OPS1 in branch VLAN 30 on 10.42.30.0/24 and SUPPORT1 in branch VLAN 40 on 10.42.40.0/24. " +
+                "Use 802.1Q trunks, connect the routers with an Ethernet WAN on 10.255.0.0/30, and configure static routes to the remote VLANs. " +
+                "Verify SALES1 can ping ENG1 and OPS1, and OPS1 can ping SALES1 and SUPPORT1.";
             prompt.Focus();
         };
         buildButton.Click += async (sender, e) => await Build();

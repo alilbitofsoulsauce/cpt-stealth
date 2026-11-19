@@ -3,9 +3,34 @@ import { createInterface } from 'node:readline';
 import { parseBuildRequest, withAttachments } from './lib/attachments.mjs';
 import { bridgeStatus, buildLab, getPaths, prepareModule } from './lib/bridge.mjs';
 import { codexStatus, generateWithCodex } from './lib/codex-planner.mjs';
+import { normalizeRoutedTopology, routedTopologySchema } from './lib/routed-topology.mjs';
 import { normalizeTopology, topologySchema } from './lib/topology.mjs';
 
 const moduleFile = new URL('./packet-tracer/Packet Tracer Helper.pts', import.meta.url);
+const plannerSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['plan'],
+  properties: { plan: { anyOf: [topologySchema, routedTopologySchema] } },
+};
+
+function normalizePlan(input) {
+  const plan = input && Object.hasOwn(input, 'plan') && Object.keys(input).length === 1 ? input.plan : input;
+  return plan?.kind === 'routed' ? normalizeRoutedTopology(plan) : normalizeTopology(plan);
+}
+
+const mcpTools = [
+  {
+    name: 'build_packet_tracer_lab',
+    description: 'Build a fresh simulated Cisco Packet Tracer lab with one Ethernet switch and up to 24 PCs on one static IPv4 subnet. Use null IPs for automatic assignment.',
+    inputSchema: topologySchema,
+  },
+  {
+    name: 'build_routed_packet_tracer_lab',
+    description: 'Build a simulated Packet Tracer lab with one or more sites, static IPv4 VLANs, router-on-a-stick trunks, and static routes over point-to-point Ethernet WAN links. Requires the current Packet Tracer Helper module.',
+    inputSchema: routedTopologySchema,
+  },
+];
 const example = {
   name: 'Two PCs and a switch',
   switchName: 'SW1',
@@ -20,9 +45,9 @@ async function run(command, argument) {
     case 'prepare':
       return prepareModule(moduleFile);
     case 'validate':
-      return { topology: normalizeTopology(JSON.parse(await readInput(argument))) };
+      return { topology: normalizePlan(JSON.parse(await readInput(argument))) };
     case 'build-plan':
-      return buildLab(normalizeTopology(JSON.parse(await readInput(argument))));
+      return buildLab(normalizePlan(JSON.parse(await readInput(argument))));
     case 'sample':
       return buildLab(normalizeTopology(example));
     case 'bridge-status':
@@ -57,8 +82,8 @@ async function run(command, argument) {
       const generate = command.startsWith('build-codex') ? generateWithCodex
         : (await import('./lib/subscription.mjs')).generateTopology;
       const instructions = prompt || 'Build the Packet Tracer topology described by the attached references.';
-      const plan = await withAttachments(paths, attachments => generate(instructions, topologySchema, attachments));
-      return buildLab(normalizeTopology(plan));
+      const plan = await withAttachments(paths, attachments => generate(instructions, plannerSchema, attachments));
+      return buildLab(normalizePlan(plan));
     }
     default:
       throw new Error('Use prepare, validate, build-plan, sample, bridge-status, status, sign-in, sign-out, build, build-codex, build-request, build-codex-request, or mcp.');
@@ -95,30 +120,28 @@ async function handleMcp(line) {
   if (!Object.hasOwn(message, 'id')) return;
 
   const reply = (result) => send({ jsonrpc: '2.0', id: message.id, result });
-  const toolName = 'build_packet_tracer_lab';
   switch (message.method) {
     case 'initialize': {
       const supported = ['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25'];
       const version = message.params?.protocolVersion;
       reply({ protocolVersion: supported.includes(version) ? version : supported.at(-1),
-        capabilities: { tools: {} }, serverInfo: { name: 'packet-tracer-helper', version: '0.1.0' } });
+        capabilities: { tools: {} }, serverInfo: { name: 'packet-tracer-helper', version: '0.2.0' } });
       break;
     }
     case 'ping':
       reply({});
       break;
     case 'tools/list':
-      reply({ tools: [{ name: toolName,
-        description: 'Build a fresh simulated Cisco Packet Tracer lab with one Ethernet switch and up to 24 PCs on a single static IPv4 subnet. Use null IPs for automatic assignment. Report unsupported requirements in unsupported. Requires the local Packet Tracer Helper module running in a blank workspace.',
-        inputSchema: topologySchema }] });
+      reply({ tools: mcpTools });
       break;
     case 'tools/call':
-      if (message.params?.name !== toolName) {
+      if (!mcpTools.some(tool => tool.name === message.params?.name)) {
         send({ jsonrpc: '2.0', id: message.id, error: { code: -32602, message: 'Unknown Packet Tracer tool.' } });
         break;
       }
       try {
-        const result = await buildLab(normalizeTopology(message.params.arguments));
+        const normalize = message.params.name === 'build_routed_packet_tracer_lab' ? normalizeRoutedTopology : normalizeTopology;
+        const result = await buildLab(normalize(message.params.arguments));
         reply({ content: [{ type: 'text', text: JSON.stringify(result) }] });
       } catch (error) {
         reply({ isError: true, content: [{ type: 'text', text: error.message }] });

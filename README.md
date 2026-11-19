@@ -12,7 +12,19 @@ Use Windows x64 with Cisco Packet Tracer 9.0.1 and signed-in Codex. [Cisco Packe
 
 > Connect two PCs through a switch on 192.168.10.0/24. Give them addresses .10 and .11 and check that they can ping each other.
 
-The helper supports one 2960 switch, up to 24 PCs on one static IPv4 subnet, and up to 24 simulated ping checks. Use **File → New** before each build so you can decide what to save from the previous lab. Labs go to `%LOCALAPPDATA%\PacketTracerHelper\labs`.
+Use **File → New** before each build so you can decide what to save from the previous lab. Labs go to `%LOCALAPPDATA%\PacketTracerHelper\labs`.
+
+## VLANs and WAN links
+
+Choose **VLAN/WAN example** in the helper for a two-site lab you can build right away. You can also paste a prompt like this:
+
+> Build an HQ and a branch with a 2911 router and a 2960 switch at each site. Put SALES1 in HQ VLAN 10 on 10.42.10.0/24 and ENG1 in HQ VLAN 20 on 10.42.20.0/24. Put OPS1 in branch VLAN 30 on 10.42.30.0/24 and SUPPORT1 in branch VLAN 40 on 10.42.40.0/24. Use 802.1Q trunks, connect the routers with an Ethernet WAN on 10.255.0.0/30, and configure static routes to the remote VLANs. Verify SALES1 can ping ENG1 and OPS1, and OPS1 can ping SALES1 and SUPPORT1.
+
+- A basic lab supports one 2960 switch and up to 24 PCs on one static IPv4 subnet.
+- A routed lab supports one to four sites with up to eight VLANs and 23 PCs per site. Enter your subnets, VLAN IDs, gateways, and host addresses, or ask the helper to choose them. A site can have up to two point-to-point WAN links, each using its own private IPv4 `/30` subnet. The helper configures inter-VLAN routing and static routes to the remote VLANs.
+- Each build supports up to 24 simulated ping checks between named PCs. The result shows how many passed, and the saved `.pkt` opens in Packet Tracer for editing.
+
+Use static IPv4 addressing and routing for these labs. DHCP, OSPF, BGP, NAT, ACLs, IPv6, and redundant WAN links are outside the current feature set.
 
 ## PDF and image references
 

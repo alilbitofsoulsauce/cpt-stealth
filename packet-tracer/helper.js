@@ -104,7 +104,8 @@ function updateHeartbeat(now) {
             return false;
         }
     }
-    if (!files.writePlainTextToFile(readyPath, JSON.stringify({pid: processId}))) {
+    var schemas = typeof buildRoutedTopology === "function" ? [1, 2] : [1];
+    if (!files.writePlainTextToFile(readyPath, JSON.stringify({pid: processId, schemas: schemas}))) {
         throw new Error("Could not write ready.json. Check the bridge path and File privilege.");
     }
     lastHeartbeat = now;
@@ -254,7 +255,12 @@ function buildTopology(job) {
     if (!validOutputPath(request.outputPath) || files.fileExists(request.outputPath)) {
         throw new Error("Choose a new .pkt output in the Packet Tracer Helper labs directory.");
     }
-    validateTopology(topology);
+    if (!topology || (topology.schemaVersion !== 1 && topology.schemaVersion !== 2) || !Array.isArray(topology.pings)) {
+        throw new Error("Unsupported Packet Tracer topology format.");
+    }
+    if (topology.schemaVersion === 1) {
+        validateTopology(topology);
+    }
 
     var network = ipc.network();
     var workspace = app.getActiveWorkspace().getLogicalWorkspace();
@@ -268,6 +274,13 @@ function buildTopology(job) {
 
     job.network = network;
     job.endpoints = Object.create(null);
+    job.checks = topology.pings.map(function (check) {
+        return {from: check.from, to: check.to, ok: false};
+    });
+    if (topology.schemaVersion === 2) {
+        buildRoutedTopology(job, network, workspace);
+        return;
+    }
     job.modifiedWorkspace = true;
     var switchDevice = addDevice(workspace, network, 1, ["2960-24TT", "2960"], topology.switchName, 420, 100);
     topology.pcs.forEach(function (pc, index) {
@@ -287,9 +300,6 @@ function buildTopology(job) {
         job.endpoints[pc.name] = {device: device, port: port, switchPort: switchPort, ipv4: pc.ipv4};
     });
 
-    job.checks = topology.pings.map(function (check) {
-        return {from: check.from, to: check.to, ok: false};
-    });
     job.phase = "links";
     job.linkDeadline = Date.now() + 3000;
 }
@@ -332,19 +342,7 @@ function verifyTopology(job, now) {
             dprint("Packet Tracer reported " + linkCount + " network links. Verified " +
                 topology.pcs.length + " requested cables directly at their endpoints.");
         }
-        job.phase = "pings";
-        job.pingQueue = job.checks.slice();
-        job.pingAttempts = Object.create(null);
-        job.nextPingAt = now + 1000;
-        var countsBySource = Object.create(null);
-        var longestQueue = 0;
-        job.checks.forEach(function (check) {
-            var count = (countsBySource[check.from] || 0) + 1;
-            countsBySource[check.from] = count;
-            longestQueue = Math.max(longestQueue, count);
-        });
-        // Allow links to converge and reserve time for checks that share one PC console.
-        job.pingDeadline = now + Math.max(65000, 35000 + 3000 * longestQueue);
+        startConnectivityChecks(job, now);
     } else if (now >= job.linkDeadline) {
         var names = disconnected.map(function (pc) { return pc.name; });
         throw new Error("Packet Tracer reported " + deviceCount + " devices and " + linkCount + " links. " +
@@ -352,6 +350,22 @@ function verifyTopology(job, now) {
             "Unexpected devices: " + (unexpected.join(", ") || "none") + ". " +
             "Unverified cables: " + (names.join(", ") || "none") + ".");
     }
+}
+
+function startConnectivityChecks(job, now) {
+    job.phase = "pings";
+    job.pingQueue = job.checks.slice();
+    job.pingAttempts = Object.create(null);
+    job.nextPingAt = now + 1000;
+    var countsBySource = Object.create(null);
+    var longestQueue = 0;
+    job.checks.forEach(function (check) {
+        var count = (countsBySource[check.from] || 0) + 1;
+        countsBySource[check.from] = count;
+        longestQueue = Math.max(longestQueue, count);
+    });
+    // Allow links to converge and reserve time for checks that share one PC console.
+    job.pingDeadline = now + Math.max(65000, 35000 + 3000 * longestQueue);
 }
 
 function addDevice(workspace, network, type, models, name, x, y) {
@@ -423,6 +437,8 @@ function advanceJob(now) {
     try {
         if (job.phase === "links") {
             verifyTopology(job, now);
+        } else if (job.phase === "routed-config") {
+            advanceRoutedJob(job, now);
         } else if (job.phase === "save" && now >= job.saveDeadline) {
             finishJob(false, "Packet Tracer did not confirm the native .pkt save.");
         } else if (job.phase === "pings") {

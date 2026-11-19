@@ -1,4 +1,4 @@
 [mcp_servers.packet_tracer_helper]
 command = "node"
 args = ["helper.mjs", "mcp"]
-tool_timeout_sec = 145
+tool_timeout_sec = 255
